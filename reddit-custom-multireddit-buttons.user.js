@@ -14,7 +14,7 @@ var remove_subscribed     = 1;
 var remove_explore        = 1;
 var remove_explore_multis = 1;
 var remove_create_multi   = 1;
-var remove_other          = 0; /* remove all other buttons below the multireddit list (everything, moderating, saved) */
+var remove_other          = 1; /* remove all other buttons below the multireddit list (everything, moderating, saved) */
 
 var custom_buttons        = {
 	"everything": "/r/all/",
@@ -23,6 +23,11 @@ var custom_buttons        = {
 
 function create_buttons (buttons) {
 	var global  = document.getElementsByClassName("global")[0];
+
+	if (global === undefined) {
+		return;
+	}
+
 	var buttons = global.children;
 	
 	/* live list, remove backwards so as not to skip elements */

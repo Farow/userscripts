@@ -13,7 +13,7 @@
 /*
 	Changelog:
 
-		- 2014-08-31 - Initial release
+		2014-08-31 - 1.00 - Initial release
 */
 
 'use strict';

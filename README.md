@@ -1,12 +1,5 @@
 ### Userscripts
 
-Table of contents:
-
-1. [List of scripts](#list)
-2. [Useful scripts made by others](#usefulscripts)
-
-<a name="list" />
-
 |     | Name                                                                                   | Description                                   |
 |-----|----------------------------------------------------------------------------------------|-----------------------------------------------|
 |     | [reddit-comment-vote-history.user.js](reddit-comment-vote-history.user.js)             | saves the comments you vote on                |
@@ -16,8 +9,6 @@ Table of contents:
 
 <sup>Legend: *u* - recently updated, *n* - new</sup>
 
-<a name="remarks" />
-<a name="usefulscripts" />
 ### Useful scripts made by others
 Scripts made by others that I actually use and find (somewhat) useful.
 

@@ -3,14 +3,28 @@
 Table of contents:
 
 1. [List of scripts](#list)
+2. [Useful scripts made by others](#usefulscripts)
 
 <a name="list" />
-[ *n* ] **[reddit-comment-vote-history.user.js](reddit-comment-vote-history.user.js)** - saves the comments you vote on  
-**[reddit-custom-multireddit-buttons.user.js](reddit-custom-multireddit-buttons.user.js)** - adds custom buttons to the multireddit list  
-[ *n* ] **[reddit-highlight-new-comments.user.js](reddit-highlight-new-comments.user.js)** - highlights new comments since your last visit
 
-<sub>Legend: [ *u* ] - recently updated, [ *n* ] - new</sub>
+|     | Name                                                                                   | Description                                   |
+|-----|----------------------------------------------------------------------------------------|-----------------------------------------------|
+|     | [reddit-comment-vote-history.user.js](reddit-comment-vote-history.user.js)             | saves the comments you vote on                |
+|     | [reddit-custom-multireddit-buttons.user.js](reddit-custom-multireddit-buttons.user.js) | adds custom buttons to the multireddit list   |
+| *n* | [reddit-fade-seen-links.user.js](reddit-custom-multireddit-buttons.user.js)            | fades links that you have already seen        |
+|     | [reddit-highlight-new-comments.user.js](reddit-highlight-new-comments.user.js)         | highlights new comments since your last visit |
+
+<sup>Legend: *u* - recently updated, *n* - new</sup>
 
 <a name="remarks" />
 <a name="usefulscripts" />
+### Useful scripts made by others
+Scripts made by others that I actually use and find (somewhat) useful.
+
+- [Google Favicons](https://monkeyguts.com/code.php?id=91)
+- [Hacker News collapsible comments](http://userscripts-mirror.org/scripts/show/138037)
+- [Mangaupdates Groups Fix](https://github.com/loadletter/mangaupdates-urlfix/)
+- [Mangaupdates Hiatus / Dropped Warning](http://userscripts-mirror.org/scripts/show/125294.html)
+- [openuserjs.org Autologin](https://openuserjs.org/scripts/cuzi/openuserjs.org_Autologin)
+- [YouTube Link Title](https://greasyfork.org/scripts/413-youtube-link-title)
 <a name="othersources" />

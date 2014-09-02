@@ -3,7 +3,7 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Fades links that you have already seen
 // @include     /https?:\/\/[a-z]+\.reddit\.com\//
-// @version     1.00
+// @version     1.01
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -16,6 +16,7 @@
 /*
 	Changelog:
 
+		2013-09-02 - 1.01 - No longer fades links or comments on a profile page
 		2013-09-02 - 1.00 - Initial release
 */
 
@@ -29,7 +30,7 @@ let start      = 0.5, /* initial opacity of seen links */
 window.addEventListener('load', init);
 
 function init() {
-	if (!document.body.classList.contains('listing-page')) {
+	if (!document.body.classList.contains('listing-page') || document.body.classList.contains('profile-page')) {
 		return;
 	}
 
@@ -121,7 +122,7 @@ function fade(element, seen, is_dupe, force_hide) {
 	if (seen) {
 		let opacity = start - step * (seen - 1);
 		if (opacity < 0) {
-			opacity = 0.05
+			opacity = 0.05;
 		}
 
 		element.parentNode.parentNode.parentNode.style.setProperty('opacity', opacity);

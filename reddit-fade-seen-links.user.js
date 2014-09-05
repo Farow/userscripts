@@ -3,7 +3,9 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Fades links that you have already seen
 // @include     /https?:\/\/[a-z]+\.reddit\.com\//
-// @version     1.01
+// @include     https://news.ycombinator.com/*
+// @include     https://lobste.rs/*
+// @version     1.02
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -16,8 +18,11 @@
 /*
 	Changelog:
 
-		2013-09-02 - 1.01 - No longer fades links or comments on a profile page
-		2013-09-02 - 1.00 - Initial release
+		2014-09-06 - 1.02
+			- added support for news.ycombinator.com and lobste.rs
+			- old links are now removed from storage depending on their last visit time, not first visit time
+		2014-09-02 - 1.01 - no longer fades links or comments on a profile page
+		2014-09-02 - 1.00 - initial release
 */
 
 let start      = 0.5, /* initial opacity of seen links */
@@ -26,33 +31,87 @@ let start      = 0.5, /* initial opacity of seen links */
 	fade_dupes = 1,   /* fade any links that appear more than once */
 	expiration = 2;   /* time after which to remove old links from storage, in days */
 
-/* compatibility with RES which modifies some links */
+/* compatibility with scripts that modify links */
 window.addEventListener('load', init);
 
+let rules = {
+	'news.ycombinator.com': {
+		'links': function () {
+			/* exclude 'more' and comment pages */
+			return [].slice.call(document.querySelectorAll('td.title a'), 0, -1);
+		},
+		'parents': function (link) {
+			return [ link.parentNode.parentNode, link.parentNode.parentNode.nextSibling ];
+		},
+	},
+	'reddit.com': {
+		'include': function () {
+			return document.body.classList.contains('listing-page');
+		},
+		'exclude': function () {
+			return document.body.classList.contains('profile-page');
+		},
+		'links': '.thing.link > .entry a.title',
+		'parents': function (link) {
+			return [ link.parentNode.parentNode.parentNode ];
+		},
+		'fade': function(parent) {
+			parent.style.setProperty('overflow', 'hidden');
+		},
+	},
+	'lobste.rs': {
+		'exclude': function () {
+			return document.querySelector('.comments');
+		},
+		'links': '.link a',
+		'parents': function (link) {
+			return [ link.parentNode.parentNode.parentNode ];
+		}
+	},
+};
+
 function init() {
-	if (!document.body.classList.contains('listing-page') || document.body.classList.contains('profile-page')) {
+	let site;
+	for (site in rules) {
+		let site_tokens   = site.split('.'),
+			domain_tokens = location.hostname.split('.').slice(-site_tokens.length);
+
+		if (equal_arrays(site_tokens, domain_tokens)) {
+			site = rules[site];
+			break;
+		}
+	}
+
+	if (site === undefined) {
+		return;
+	}
+
+	if (site.hasOwnProperty('include') && !site.include()) {
+		return;
+	}
+
+	if (site.hasOwnProperty('exclude') && site.exclude()) {
 		return;
 	}
 
 	GM_registerMenuCommand("Fade links: clear all", clear.bind(undefined, 0));
 	GM_registerMenuCommand("Fade links: clear last", clear.bind(undefined, 1));
-	GM_registerMenuCommand("Fade links: hide seen", check_links.bind(undefined, 1));
+	GM_registerMenuCommand("Fade links: hide seen", check_links.bind(undefined, site, 1));
 
 	remove_old();
-	check_links();
+	check_links(site);
 }
 
-function check_links(on_demand_hide) {
+function check_links(site, on_demand_hide) {
 	let old   = get_links_in_storage(),
-		links = get_links_in_page();
-		
+		links = get_links_in_page(site);
 
 	links.forEach(function (element) {
 		let url = element.href;
 
 		if (on_demand_hide) {
 			if (old.hasOwnProperty(url) && old[url].seen > 0) {
-				fade(element, 0, 0, 1); /* force */
+				fade(site, element, 0, 0, 1); /* force */
 			}
 		}
 		else if (!old.hasOwnProperty(url)) {
@@ -64,8 +123,10 @@ function check_links(on_demand_hide) {
 			};
 		}
 		else {
+			old[url].when = Date.now();
+
 			if (old[url].accessed) {
-				fade(element, old[url].seen, 1);
+				fade(site, element, old[url].seen, 1);
 				return;
 			}
 
@@ -79,7 +140,7 @@ function check_links(on_demand_hide) {
 				old[url].last = 0;
 			}
 
-			fade(element, old[url].seen);
+			fade(site, element, old[url].seen);
 		}
 	});
 
@@ -109,9 +170,13 @@ function clear(last) {
 	save_links({});
 }
 
-function fade(element, seen, is_dupe, force_hide) {
+function fade(site, link, seen, is_dupe, force_hide) {
+	let parents = get_parents(site, link);
 	if (force_hide || (hide_after !== 0 && seen > hide_after - 1)) {
-		element.parentNode.parentNode.parentNode.style.setProperty('display', 'none');
+		for (let i = 0; i < parents.length; i++) {
+			parents[i].style.setProperty('display', 'none');
+		}
+
 		return;
 	}
 
@@ -125,7 +190,13 @@ function fade(element, seen, is_dupe, force_hide) {
 			opacity = 0.05;
 		}
 
-		element.parentNode.parentNode.parentNode.style.setProperty('opacity', opacity);
+		for (let i = 0; i < parents.length; i++) {
+			parents[i].style.setProperty('opacity', opacity);
+
+			if (site.hasOwnProperty('fade')) {
+				site.fade(parents[i]);
+			}
+		}
 	}
 }
 
@@ -145,10 +216,12 @@ function remove_old() {
 	}
 }
 
-function get_links_in_page() {
-	return [].slice.call(document.getElementsByTagName('a')).filter(function (element) {
-		return element.classList.contains('title');
-	});
+function get_links_in_page(site) {
+	if (typeof site.links == 'function') {
+		return site.links();
+	}
+
+	return [].slice.call(document.querySelectorAll(site.links));
 }
 
 function get_links_in_storage() {
@@ -157,9 +230,35 @@ function get_links_in_storage() {
 	if (links === undefined) {
 		return { };
 	}
+
 	return JSON.parse(links);
+}
+
+function get_parents(site, link) {
+	if (site.hasOwnProperty('parents')) {
+		return site.parents(link);
+	}
+
+	return link;
 }
 
 function save_links(links) {
 	GM_setValue('links', JSON.stringify(links));
+}
+
+function equal_arrays(a, b) {
+	if (a === b) {
+		return true;
+	}
+	if (a == null || b == null || a.length != b.length) {
+		return false;
+	}
+
+	for (let i = 0; i < a.length; i++) {
+		if (a[i] !== b[i]) {
+			return false;
+		}
+	}
+
+	return true;
 }

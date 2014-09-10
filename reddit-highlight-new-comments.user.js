@@ -3,12 +3,12 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Highlights new comments since your last visit
 // @include     /https?:\/\/[a-z]+\.reddit\.com\/r\/[\w:+-]+\/comments\/[\da-z]/
+// @version     1.01
+// @require     https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
-// @version     1.00
-// @require     https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js
 // ==/UserScript==
 
 'use strict';
@@ -28,7 +28,8 @@
 
 	Changelog:
 
-		2013-08-31 - 1.00 - Initial release
+		2014-09-10 - 1.01 - no longer highlights own comments
+		2014-08-31 - 1.00 - initial release
 */
 
 /* settings */
@@ -53,7 +54,7 @@ var time_span    = 8;                     /* time span between newest and newer 
 */
 
 /* "advanced" settings */
-var expiration = 7 * 24 * 60 * 60 * 1000; /* cache expiration in miliseconds (1 weeks)*/
+var expiration = 7 * 24 * 60 * 60 * 1000; /* cache expiration in miliseconds (1 week)*/
 
 init();
 
@@ -92,15 +93,26 @@ function init() {
 
 function highlight_comments(last_visit) {
 	let comments     = document.getElementsByClassName('comment'),
-		new_comments = 0;
+		new_comments = 0,
+		username;
+
+	if (document.body.classList.contains('loggedin')) {
+		username = document.getElementsByClassName('user')[0].firstElementChild.textContent;
+	}
 
 	for (let i = 0; i < comments.length; i++) {
 		/* current comment data */
 		let comment    = comments[i];
 		let comment_id = comment.dataset.fullname;
 
-		/* skipped removed or deleted comments */
+		/* skip removed or deleted comments */
 		if (comment.classList.contains('deleted') || comment.classList.contains('spam')) {
+			continue;
+		}
+
+		/* skip our own comments */
+		let author = comment.getElementsByClassName('author')[0].textContent;
+		if (username && username == author) {
 			continue;
 		}
 
@@ -114,10 +126,7 @@ function highlight_comments(last_visit) {
 		let parent = comment.parentNode.parentNode.parentNode;
 		let parent_id, parent_score;
 
-		if (!parent.classList.contains('comment') || parent.classList.contains('deleted') || parent.classList.contains('spam')) {
-			parent = null;
-		}
-		else {
+		if (parent.classList.contains('comment') && !parent.classList.contains('deleted') && !parent.classList.contains('spam')) {
 			parent_id    = parent.dataset.fullname;
 			parent_score = get_comment_score(parent);
 		}
@@ -129,7 +138,7 @@ function highlight_comments(last_visit) {
 			new_comments++;
 		}
 		/* better comments */
-		if (parent && highlight_better && parent_score > -1 && score > parent_score) {
+		if (parent_id && highlight_better && parent_score > -1 && score > parent_score) {
 			comment.style.setProperty('border-left', border_style_better, 'important');
 		}
 		/* negative comments */

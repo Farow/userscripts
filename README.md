@@ -4,8 +4,8 @@
 |-----|----------------------------------------------------------------------------------------|-----------------------------------------------|
 |     | [reddit-comment-vote-history.user.js](reddit-comment-vote-history.user.js)             | saves the comments you vote on                |
 |     | [reddit-custom-multireddit-buttons.user.js](reddit-custom-multireddit-buttons.user.js) | adds custom buttons to the multireddit list   |
-|     | [reddit-fade-seen-links.user.js](reddit-custom-multireddit-buttons.user.js)            | fades links that you have already seen        |
-| *u* | [reddit-highlight-new-comments.user.js](reddit-highlight-new-comments.user.js)         | highlights new comments since your last visit |
+| *u* | [reddit-fade-seen-links.user.js](reddit-custom-multireddit-buttons.user.js)            | fades links that you have already seen        |
+|     | [reddit-highlight-new-comments.user.js](reddit-highlight-new-comments.user.js)         | highlights new comments since your last visit |
 
 <sup>Legend: *u* - recently updated, *n* - new</sup>
 

@@ -5,11 +5,13 @@
 // @include     /https?:\/\/[a-z]+\.reddit\.com\//
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
-// @version     1.02
+// @include     https://openuserjs.org/*
+// @version     1.03
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
+// @grant       GM_addStyle
 // @grant       GM_registerMenuCommand
 // ==/UserScript==
 
@@ -18,6 +20,13 @@
 /*
 	Changelog:
 
+		2014-09-13 - 1.03
+			- added support for openuserjs.org
+			- added support for styling new links
+			- moved some options to css style to allow easier styling
+			- added remove styles command
+			- clear last now only works for the links that you saw on your last page,
+			  not all the links that you have seen once
 		2014-09-06 - 1.02
 			- added support for news.ycombinator.com and lobste.rs
 			- old links are now removed from storage depending on their last visit time, not first visit time
@@ -25,11 +34,17 @@
 		2014-09-02 - 1.00 - initial release
 */
 
-let start      = 0.5, /* initial opacity of seen links */
-	step       = 0,   /* opacity decrease for every time you have seen a link */
+let opacity    = 0.5, /* opacity of seen links */
 	hide_after = 0,   /* times seen a link before hiding it (0 to never hide links) */
-	fade_dupes = 1,   /* fade any links that appear more than once */
 	expiration = 2;   /* time after which to remove old links from storage, in days */
+
+GM_addStyle(
+	  '.fade { opacity: ' + opacity + '; }'
+	+ '.dupe { opacity: 0.85; }'
+	+ '.hide { display: none; }'
+	+ '.new  { box-shadow: -2px 0px 0px 0px hsl(210, 100%, 75%); }'
+);
+
 
 /* compatibility with scripts that modify links */
 window.addEventListener('load', init);
@@ -55,9 +70,7 @@ let rules = {
 		'parents': function (link) {
 			return [ link.parentNode.parentNode.parentNode ];
 		},
-		'fade': function(parent) {
-			parent.style.setProperty('overflow', 'hidden');
-		},
+		'style': '.fade, .dupe { overflow: hidden; }',
 	},
 	'lobste.rs': {
 		'exclude': function () {
@@ -66,6 +79,12 @@ let rules = {
 		'links': '.link a',
 		'parents': function (link) {
 			return [ link.parentNode.parentNode.parentNode ];
+		}
+	},
+	'openuserjs.org': {
+		'links': 'a.tr-link-a',
+		'parents': function(link) {
+			return [ link.parentNode.parentNode ];
 		}
 	},
 };
@@ -96,6 +115,7 @@ function init() {
 
 	GM_registerMenuCommand("Fade links: clear all", clear.bind(undefined, 0));
 	GM_registerMenuCommand("Fade links: clear last", clear.bind(undefined, 1));
+	GM_registerMenuCommand("Fade links: remove styles", remove_styles.bind(undefined, site));
 	GM_registerMenuCommand("Fade links: hide seen", check_links.bind(undefined, site, 1));
 
 	remove_old();
@@ -121,6 +141,11 @@ function check_links(site, on_demand_hide) {
 				when: Date.now(),
 				accessed: 1
 			};
+
+			let parents = get_parents(site, element);
+			for (let i = 0; i < parents.length; i++) {
+				parents[i].classList.add('new');
+			}
 		}
 		else {
 			old[url].when = Date.now();
@@ -148,6 +173,9 @@ function check_links(site, on_demand_hide) {
 		if (old[url].accessed) {
 			delete old[url].accessed;
 		}
+		else if (old[url].last == 2) {
+			old[url].last = 0;
+		}
 	}
 
 	save_links(old);
@@ -174,30 +202,35 @@ function fade(site, link, seen, is_dupe, force_hide) {
 	let parents = get_parents(site, link);
 	if (force_hide || (hide_after !== 0 && seen > hide_after - 1)) {
 		for (let i = 0; i < parents.length; i++) {
-			parents[i].style.setProperty('display', 'none');
+			parents[i].classList.add('hide');
 		}
 
 		return;
 	}
 
-	if (is_dupe && fade_dupes) {
-		seen++;
-	}
-
-	if (seen) {
-		let opacity = start - step * (seen - 1);
-		if (opacity < 0) {
-			opacity = 0.05;
+	for (let i = 0; i < parents.length; i++) {
+		if (seen) {
+			parents[i].classList.add('fade');
+		}
+		else if (is_dupe) {
+			parents[i].classList.add('dupe');
 		}
 
+		if (site.style) {
+			GM_addStyle(site.style);
+		}
+	}
+}
+
+function remove_styles(site) {
+	let links = get_links_in_page(site);
+
+	links.forEach(function (element) {
+		let parents = get_parents(site, element);
 		for (let i = 0; i < parents.length; i++) {
-			parents[i].style.setProperty('opacity', opacity);
-
-			if (site.hasOwnProperty('fade')) {
-				site.fade(parents[i]);
-			}
+			parents[i].classList.remove('fade', 'dupe', 'hide', 'new');
 		}
-	}
+	});
 }
 
 function remove_old() {

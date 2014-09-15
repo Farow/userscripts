@@ -6,7 +6,7 @@
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
 // @include     https://openuserjs.org/*
-// @version     1.03
+// @version     1.04
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -20,6 +20,9 @@
 /*
 	Changelog:
 
+		2014-09-14 - 1.04
+			- improved support for hacker news
+			- added a hide seen button
 		2014-09-13 - 1.03
 			- added support for openuserjs.org
 			- added support for styling new links
@@ -36,15 +39,13 @@
 
 let opacity    = 0.5, /* opacity of seen links */
 	hide_after = 0,   /* times seen a link before hiding it (0 to never hide links) */
-	expiration = 2;   /* time after which to remove old links from storage, in days */
-
-GM_addStyle(
-	  '.fade { opacity: ' + opacity + '; }'
-	+ '.dupe { opacity: 0.85; }'
-	+ '.hide { display: none; }'
-	+ '.new  { box-shadow: -2px 0px 0px 0px hsl(210, 100%, 75%); }'
-);
-
+	expiration = 2,   /* time after which to remove old links from storage, in days */
+	style      =
+		  '.fade { opacity: ' + opacity + '; }'
+		+ '.dupe { opacity: 0.85; box-shadow: -2px 0px 0px 0px hsl(210, 100%, 90%); }'
+		+ '.hide { display: none; }'
+		+ '.new  { box-shadow: -2px 0px 0px 0px hsl(210, 100%, 75%); }'
+;
 
 /* compatibility with scripts that modify links */
 window.addEventListener('load', init);
@@ -56,7 +57,17 @@ let rules = {
 			return [].slice.call(document.querySelectorAll('td.title a'), 0, -1);
 		},
 		'parents': function (link) {
-			return [ link.parentNode.parentNode, link.parentNode.parentNode.nextSibling ];
+			return [ link.parentNode.parentNode, link.parentNode.parentNode.nextSibling, link.parentNode.parentNode.nextSibling.nextSibling ];
+		},
+		'hide_button': function () {
+			let a = document.createElement('a');
+
+			a.href = '#';
+			a.textContent = 'hide seen';
+
+			document.getElementsByClassName('pagetop')[0].innerHTML += ' | ';
+
+			return ['.pagetop', a];
 		},
 	},
 	'reddit.com': {
@@ -71,6 +82,18 @@ let rules = {
 			return [ link.parentNode.parentNode.parentNode ];
 		},
 		'style': '.fade, .dupe { overflow: hidden; }',
+		'hide_button': function () {
+			let li = document.createElement('li'),
+				a  = document.createElement('a');
+
+			a.href = '#';
+			a.textContent = 'hide seen';
+			a.classList.add('choice');
+
+			li.appendChild(a);
+
+			return [ '.tabmenu', li ];
+		},
 	},
 	'lobste.rs': {
 		'exclude': function () {
@@ -79,13 +102,32 @@ let rules = {
 		'links': '.link a',
 		'parents': function (link) {
 			return [ link.parentNode.parentNode.parentNode ];
-		}
+		},
+		'hide_button': function () {
+			let a = document.createElement('a');
+
+			a.href = '#';
+			a.textContent = 'Hide seen';
+
+			return ['.headerlinks', a];
+		},
 	},
 	'openuserjs.org': {
 		'links': 'a.tr-link-a',
 		'parents': function(link) {
 			return [ link.parentNode.parentNode ];
-		}
+		},
+		'hide_button': function (){
+			let li = document.createElement('li'),
+				a  = document.createElement('a');
+
+			a.href = '#';
+			a.textContent = 'Hide seen';
+
+			li.appendChild(a);
+
+			return ['ul.navbar-right', li, document.getElementsByClassName('navbar-right')[0].lastElementChild.previousElementSibling];
+		},
 	},
 };
 
@@ -111,6 +153,29 @@ function init() {
 
 	if (site.hasOwnProperty('exclude') && site.exclude()) {
 		return;
+	}
+
+	if (!site.hasOwnProperty('remove_default_styles')) {
+		GM_addStyle(style);
+	}
+
+	if (site.hasOwnProperty('hide_button')) {
+		let [where, button, insert_before] = site.hide_button();
+		let element = document.querySelector(where);
+
+		if (element) {
+			if (insert_before) {
+				element.insertBefore(button, insert_before);
+			}
+			else {
+				element.appendChild(button);
+			}
+			
+			button.addEventListener('click', function (event) {
+				check_links(site, 1);
+				event.preventDefault();
+			});
+		}
 	}
 
 	GM_registerMenuCommand("Fade links: clear all", clear.bind(undefined, 0));

@@ -6,7 +6,7 @@
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
 // @include     https://openuserjs.org/*
-// @version     1.04
+// @version     1.0.5
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -20,28 +20,34 @@
 /*
 	Changelog:
 
-		2014-09-14 - 1.04
-			- improved support for hacker news
+		2014-09-19 - 1.0.5
+			- added live feedback on hover/click
+			- added clear all on this page command
+			- added fade_mode option
+			- improved hiding non-script links on openuserjs.org
+			- removed opacity option
+		2014-09-14 - 1.0.4
 			- added a hide seen button
-		2014-09-13 - 1.03
+			- improved support for hacker news
+		2014-09-13 - 1.0.3
 			- added support for openuserjs.org
 			- added support for styling new links
 			- moved some options to css style to allow easier styling
 			- added remove styles command
 			- clear last now only works for the links that you saw on your last page,
 			  not all the links that you have seen once
-		2014-09-06 - 1.02
+		2014-09-06 - 1.0.2
 			- added support for news.ycombinator.com and lobste.rs
 			- old links are now removed from storage depending on their last visit time, not first visit time
-		2014-09-02 - 1.01 - no longer fades links or comments on a profile page
-		2014-09-02 - 1.00 - initial release
+		2014-09-02 - 1.0.1 - no longer fades links or comments on a profile page
+		2014-09-02 - 1.0.0 - initial release
 */
 
-let opacity    = 0.5, /* opacity of seen links */
+let fade_mode  = 2,   /* 1: automatically fade all links, 2: fade hovered links, 3: fade clicked links */
 	hide_after = 0,   /* times seen a link before hiding it (0 to never hide links) */
 	expiration = 2,   /* time after which to remove old links from storage, in days */
 	style      =
-		  '.fade { opacity: ' + opacity + '; }'
+		  '.fade { opacity: 0.5; transition: opacity 1s ease-in-out; }'
 		+ '.dupe { opacity: 0.85; box-shadow: -2px 0px 0px 0px hsl(210, 100%, 90%); }'
 		+ '.hide { display: none; }'
 		+ '.new  { box-shadow: -2px 0px 0px 0px hsl(210, 100%, 75%); }'
@@ -115,7 +121,15 @@ let rules = {
 	'openuserjs.org': {
 		'links': 'a.tr-link-a',
 		'parents': function(link) {
-			return [ link.parentNode.parentNode ];
+			/* script links */
+			let parent = link.parentNode.parentNode;
+
+			/* any other links */
+			if (!/^https:\/\/openuserjs\.org\/scripts\//.test(link.href)) {
+				parent = parent.parentNode;
+			}
+
+			return [ parent ];
 		},
 		'hide_button': function (){
 			let li = document.createElement('li'),
@@ -178,10 +192,11 @@ function init() {
 		}
 	}
 
-	GM_registerMenuCommand("Fade links: clear all", clear.bind(undefined, 0));
-	GM_registerMenuCommand("Fade links: clear last", clear.bind(undefined, 1));
-	GM_registerMenuCommand("Fade links: remove styles", remove_styles.bind(undefined, site));
-	GM_registerMenuCommand("Fade links: hide seen", check_links.bind(undefined, site, 1));
+	GM_registerMenuCommand('Fade links: clear all', clear.bind(undefined, 0, site));
+	GM_registerMenuCommand('Fade links: clear on this page', clear.bind(undefined, 1, site));
+	GM_registerMenuCommand('Fade links: clear last', clear.bind(undefined, 2, site));
+	GM_registerMenuCommand('Fade links: remove styles', remove_styles.bind(undefined, site));
+	GM_registerMenuCommand('Fade links: hide seen', check_links.bind(undefined, site, 1));
 
 	remove_old();
 	check_links(site);
@@ -198,18 +213,51 @@ function check_links(site, on_demand_hide) {
 			if (old.hasOwnProperty(url) && old[url].seen > 0) {
 				fade(site, element, 0, 0, 1); /* force */
 			}
-		}
-		else if (!old.hasOwnProperty(url)) {
-			old[url] = {
-				seen: 0,
-				last: 1,
-				when: Date.now(),
-				accessed: 1
-			};
 
+			return;
+		}
+
+		if (!old.hasOwnProperty(url)) {
+			/* mark new */
 			let parents = get_parents(site, element);
 			for (let i = 0; i < parents.length; i++) {
 				parents[i].classList.add('new');
+			}
+
+			/* automatically add to history */
+			if (fade_mode === 1) {
+				if (!old.hasOwnProperty(url)) {
+					old[url] = {
+						seen: 0,
+						last: 1,
+						when: Date.now(),
+						accessed: 1,
+					};
+				}
+			}
+			/* add to history on hover/click */
+			else {
+				let capture_event = fade_mode === 2 ? 'mouseover' : 'mouseup';
+				element.addEventListener(capture_event, function (e) {
+					/* avoid right click and modifier buttons */
+					if (e.type === 'mouseup' && (e.button === 2 || e.ctrlKey || e.shiftKey || e.altKey || e.metaKey)) {
+						return;
+					}
+
+					let url = e.currentTarget.href;
+					if (!old.hasOwnProperty(url)) {
+						old[url] = {
+							seen: 1,
+							last: 1,
+							when: Date.now(),
+							accessed: 1,
+						};
+					}
+
+					//window.setTimeout(fade, 1000, site, element, old[url].seen);
+					fade(site, element, old[url].seen);
+					save_links(old);
+				});
 			}
 		}
 		else {
@@ -234,33 +282,42 @@ function check_links(site, on_demand_hide) {
 		}
 	});
 
-	for (let url in old) {
-		if (old[url].accessed) {
-			delete old[url].accessed;
-		}
-		else if (old[url].last == 2) {
-			old[url].last = 0;
-		}
-	}
-
 	save_links(old);
 }
 
-function clear(last) {
-	if (last) {
-		let links = get_links_in_storage();
+function clear(clear_type, site) {
+	/* clear all */
+	if (!clear_type) {
+		save_links({});
+		return;
+	}
 
+	let links = get_links_in_storage();
+
+	/* clear all on this page */
+	if (clear_type === 1) {
+		let new_links = get_links_in_page(site);
+
+		new_links.forEach(function (element) {
+			let url = element.href;
+
+			if (links.hasOwnProperty(url)) {
+				delete links[url];
+			}
+		});
+	}
+	/* clear last */
+	else if (clear_type === 2) {
 		for (let url in links) {
 			if (links[url].last == 2) {
 				delete links[url];
 			}
 		}
-
-		save_links(links);
-		return;
 	}
 
-	save_links({});
+	save_links(links);
+	return;
+
 }
 
 function fade(site, link, seen, is_dupe, force_hide) {
@@ -341,6 +398,15 @@ function get_parents(site, link) {
 }
 
 function save_links(links) {
+	for (let url in links) {
+		if (links[url].accessed) {
+			delete links[url].accessed;
+		}
+		else if (links[url].last == 2) {
+			links[url].last = 0;
+		}
+	}
+
 	GM_setValue('links', JSON.stringify(links));
 }
 
@@ -348,7 +414,7 @@ function equal_arrays(a, b) {
 	if (a === b) {
 		return true;
 	}
-	if (a == null || b == null || a.length != b.length) {
+	if (!a || !b || a.length != b.length) {
 		return false;
 	}
 

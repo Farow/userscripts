@@ -17,5 +17,5 @@ Scripts made by others that I actually use and find (somewhat) useful.
 - [Mangaupdates Groups Fix](https://github.com/loadletter/mangaupdates-urlfix/)
 - [Mangaupdates Hiatus / Dropped Warning](http://userscripts-mirror.org/scripts/show/125294.html)
 - [openuserjs.org Autologin](https://openuserjs.org/scripts/cuzi/openuserjs.org_Autologin)
+- [select-text-inside-a-link-like-opera](https://github.com/eight04/select-text-inside-a-link-like-opera)
 - [YouTube Link Title](https://greasyfork.org/scripts/413-youtube-link-title)
-<a name="othersources" />

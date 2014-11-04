@@ -6,7 +6,7 @@
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
 // @include     https://openuserjs.org/*
-// @version     1.0.6
+// @version     1.0.7
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -20,6 +20,10 @@
 /*
 	changelog:
 
+		2014-11-04 - 1.0.7
+			- hide seen button now displays the amount of seen/faded links
+			- hide seen button and menu entries are now only created if links are found
+			- right clicks and modifier keys will now prevent links being marked as seen when hovering over links
 		2014-10-01 - 1.0.6
 			- duplicate links are now marked on hover/click
 			- seen links are now saved properly
@@ -65,6 +69,9 @@ window.addEventListener('load', init); /* compatibility with scripts that modify
 window.addEventListener('unload', save_new);
 
 let new_links = [ ],
+	old_links = 0,
+	site,
+	hide_button,
 	rules     = {
 		'news.ycombinator.com': {
 			'links': function () {
@@ -83,6 +90,9 @@ let new_links = [ ],
 				document.getElementsByClassName('pagetop')[0].innerHTML += ' | ';
 
 				return ['.pagetop', a];
+			},
+			'hide_button_set_amount': function (button, amount) {
+				button.textContent = 'hide seen (' + amount + ')';
 			},
 		},
 		'reddit.com': {
@@ -109,6 +119,9 @@ let new_links = [ ],
 
 				return [ '.tabmenu', li ];
 			},
+			'hide_button_set_amount': function (button, amount) {
+				button.children[0].textContent = 'hide seen (' + amount + ')';
+			},
 		},
 		'lobste.rs': {
 			'exclude': function () {
@@ -125,6 +138,9 @@ let new_links = [ ],
 				a.textContent = 'Hide seen';
 
 				return ['.headerlinks', a];
+			},
+			'hide_button_set_amount': function (button, amount) {
+				button.textContent = 'hide seen (' + amount + ')';
 			},
 		},
 		'openuserjs.org': {
@@ -147,13 +163,15 @@ let new_links = [ ],
 
 				return ['ul.navbar-right', li, document.getElementsByClassName('navbar-right')[0].lastElementChild.previousElementSibling];
 			},
+			'hide_button_set_amount': function (button, amount) {
+				button.children[0].textContent = 'hide seen (' + amount + ')';
+			},
 			'style': '.table-responsive { overflow-x: visible; }',
 		},
 	}
 ;
 
 function init() {
-	let site;
 	for (site in rules) {
 		let site_tokens   = site.split('.'),
 			domain_tokens = location.hostname.split('.').slice(-site_tokens.length);
@@ -184,31 +202,36 @@ function init() {
 		GM_addStyle(site.style);
 	}
 
-	GM_registerMenuCommand('Fade links: clear all', clear.bind(undefined, 0, site));
-	GM_registerMenuCommand('Fade links: clear all on this page', clear.bind(undefined, 1, site));
-	GM_registerMenuCommand('Fade links: clear last', clear.bind(undefined, 2, site));
-	GM_registerMenuCommand('Fade links: remove styles', remove_styles.bind(undefined, site));
-	GM_registerMenuCommand('Fade links: hide seen', check_links.bind(undefined, site, 1));
-
 	let found = check_links(site);
 
-	if (found && site.hasOwnProperty('hide_button')) {
-		let [where, button, insert_before] = site.hide_button();
-		let element = document.querySelector(where);
+	if (found) {
+		if (site.hasOwnProperty('hide_button')) {
+			let [where, button, insert_before] = site.hide_button();
+			let element = document.querySelector(where);
 
-		if (element) {
-			if (insert_before) {
-				element.insertBefore(button, insert_before);
+			if (element) {
+				if (insert_before) {
+					element.insertBefore(button, insert_before);
+				}
+				else {
+					element.appendChild(button);
+				}
+				
+				button.addEventListener('click', function (event) {
+					check_links(site, 1);
+					event.preventDefault();
+				});
+
+				hide_button = button;
+				update_hide_button();
 			}
-			else {
-				element.appendChild(button);
-			}
-			
-			button.addEventListener('click', function (event) {
-				check_links(site, 1);
-				event.preventDefault();
-			});
 		}
+
+		GM_registerMenuCommand('Fade links: clear all', clear.bind(undefined, 0, site));
+		GM_registerMenuCommand('Fade links: clear all on this page', clear.bind(undefined, 1, site));
+		GM_registerMenuCommand('Fade links: clear last', clear.bind(undefined, 2, site));
+		GM_registerMenuCommand('Fade links: remove styles', remove_styles.bind(undefined, site));
+		GM_registerMenuCommand('Fade links: hide seen', check_links.bind(undefined, site, 1));
 	}
 
 	remove_old();
@@ -225,6 +248,9 @@ function check_links(site, on_demand_hide) {
 			if (get_parents(site, element)[0].classList.contains('fade')) {
 				fade(site, element, 0, 0, 1); /* force */
 			}
+
+			old_links = 0;
+			update_hide_button();
 
 			return;
 		}
@@ -253,13 +279,16 @@ function check_links(site, on_demand_hide) {
 				let capture_event = fade_mode === 2 ? 'mouseover' : 'mouseup';
 				element.addEventListener(capture_event, function (e) {
 					/* avoid right click and modifier buttons */
-					if (e.type === 'mouseup' && (e.button === 2 || e.ctrlKey || e.shiftKey || e.altKey || e.metaKey)) {
+					if (e.button === 2 || e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) {
 						return;
 					}
 
 					new_links.push(e.currentTarget.href);
 					mark_dupes(site, links, e.currentTarget);
 					fade(site, element, 1);
+
+					old_links++;
+					update_hide_button();
 
 					/* clone hack to remove event listener */
 					let clone = e.currentTarget.cloneNode(1);
@@ -269,6 +298,7 @@ function check_links(site, on_demand_hide) {
 		}
 		else {
 			old[url].when = Date.now();
+			old_links++;
 
 			if (old[url].accessed) {
 				fade(site, element, old[url].seen, 1);
@@ -344,6 +374,12 @@ function fade(site, link, seen, is_dupe, force_hide) {
 		else if (is_dupe) {
 			parents[i].classList.add('dupe');
 		}
+	}
+}
+
+function update_hide_button() {
+	if (site.hasOwnProperty('hide_button_set_amount')) {
+		site.hide_button_set_amount(hide_button, old_links);
 	}
 }
 

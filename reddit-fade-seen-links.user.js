@@ -6,7 +6,7 @@
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
 // @include     https://openuserjs.org/*
-// @version     1.0.7
+// @version     1.0.8
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -20,6 +20,8 @@
 /*
 	changelog:
 
+		2014-11-14 - 1.0.8
+			- fixed issue where you had to click twice to open a link with fade_mode = 3
 		2014-11-04 - 1.0.7
 			- hide seen button now displays the amount of seen/faded links
 			- hide seen button and menu entries are now only created if links are found
@@ -291,8 +293,10 @@ function check_links(site, on_demand_hide) {
 					update_hide_button();
 
 					/* clone hack to remove event listener */
-					let clone = e.currentTarget.cloneNode(1);
-					e.currentTarget.parentNode.replaceChild(clone, e.currentTarget);
+					window.setTimeout(function (target) {
+						let clone = target.cloneNode(1);
+						target.parentNode.replaceChild(clone, target);
+					}, 0, e.currentTarget);
 				});
 			}
 		}

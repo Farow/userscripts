@@ -3,7 +3,7 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Highlights new comments since your last visit
 // @include     /https?:\/\/[a-z]+\.reddit\.com\/r\/[\w:+-]+\/comments\/[\da-z]/
-// @version     1.01
+// @version     1.0.2
 // @require     https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -28,12 +28,15 @@
 
 	Changelog:
 
-		2014-09-10 - 1.01 - no longer highlights own comments
-		2014-08-31 - 1.00 - initial release
+		2015-02-20 - 1.0.2 - added option to use either this script's or reddit's comment highlighting
+		2014-09-10 - 1.0.1 - no longer highlights your own comments
+		2014-08-31 - 1.0.0 - initial release
 */
 
 /* settings */
 var highlight_edited      = true;                /* highlight edited comments since last visit */
+var default_highlighting  = false;               /* if true this script does nothing wherever comment highlighting */
+                                                 /* is available, otherwise hides the default highlighting */
 
 var highlight_better      = true;                /* highlight child comments with more karma than their parents */
 var highlight_negative    = true;                /* highlight comments with negative karma */
@@ -56,6 +59,7 @@ var time_span    = 8;                     /* time span between newest and newer 
 /* "advanced" settings */
 var expiration = 7 * 24 * 60 * 60 * 1000; /* cache expiration in miliseconds (1 week)*/
 
+var has_gold;
 init();
 
 function init() {
@@ -67,6 +71,7 @@ function init() {
 	let thread_id  = (document.getElementById('siteTable').firstChild.className.match(/id-(t3_[^ ]+)/))[1],
 		last_visit = GM_getValue(thread_id),
 		highlight  = 1;
+		has_gold   = document.getElementsByClassName('comment-visits-box')[0] ? true : false;
 
 	purge_old_storage();
 
@@ -96,6 +101,10 @@ function highlight_comments(last_visit) {
 		new_comments = 0,
 		username;
 
+	if (has_gold && default_highlighting) {
+		return;
+	}
+
 	if (document.body.classList.contains('loggedin')) {
 		username = document.getElementsByClassName('user')[0].firstElementChild.textContent;
 	}
@@ -114,6 +123,10 @@ function highlight_comments(last_visit) {
 		let author = comment.getElementsByClassName('author')[0].textContent;
 		if (username && username == author) {
 			continue;
+		}
+
+		if (has_gold && !default_highlighting) {
+			comment.setAttribute('class', comment.getAttribute('class').replace(/comment-period-\d+/, ''));
 		}
 
 		/* times  = [creation time, edit time] */
@@ -159,17 +172,27 @@ function reset_highlighted_comments() {
 
 function create_comment_highlighter(thread_id, last_visit) {
 	let comment_margin,
-		commentarea = document.getElementsByClassName('commentarea')[0],
-		sitetable   = commentarea.getElementsByClassName('sitetable')[0],
-		difference  = Date.now() - last_visit,
-		highlighter = document.createElement('div'),
-		title       = document.createElement('div'),
-		description = document.createElement('span'),
-		input       = document.createElement('input'),
-		highlight   = document.createElement('input');
+		commentarea      = document.getElementsByClassName('commentarea')[0],
+		sitetable        = commentarea.getElementsByClassName('sitetable')[0],
+		difference       = Date.now() - last_visit,
+		highlighter      = document.createElement('div'),
+		title            = document.createElement('div'),
+		description      = document.createElement('span'),
+		input            = document.createElement('input'),
+		highlight        = document.createElement('input'),
+		gold_highlighter = document.getElementsByClassName('comment-visits-box')[0];
 
 	if (sitetable.firstChild.id == 'noresults') {
 		return;
+	}
+
+	if (gold_highlighter) {
+		if (!default_highlighting) {
+			gold_highlighter.parentNode.removeChild(gold_highlighter);
+		}
+		else {
+			return;
+		}
 	}
 
 	/* get the margin-left of the first comment so that the highlighter has the same margin */

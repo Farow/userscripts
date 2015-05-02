@@ -3,7 +3,7 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Saves the comments you vote on
 // @include     /^https?:\/\/[a-z]+\.reddit\.com\/(?:(?:r\/[\da-z_:+-]+\/)?comments|user\/[\da-z_]+)/
-// @version     1.00
+// @version     1.0.1
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -11,9 +11,12 @@
 // ==/UserScript==
 
 /*
-	Changelog:
+	changelog:
 
-		2014-08-31 - 1.00 - Initial release
+		2015-05-03 - 1.0.1
+			- font size now matches reddit's font size
+			- no longer apends a hash at the end of the url
+		2014-08-31 - 1.0.0 - initial release
 */
 
 'use strict';
@@ -85,7 +88,13 @@ function create_history_button() {
 	button.appendChild(link);
 	tabmenu.appendChild(button);
 
-	link.addEventListener('click', function (){ fix_sorting_menu(); display_comments('new'); });
+	link.addEventListener('click', function (e){
+		fix_sorting_menu();
+		display_comments('new');
+
+		e.preventDefault();
+		e.stopPropagation();
+	});
 }
 
 function fix_sorting_menu() {
@@ -176,7 +185,7 @@ function append_comment(where, comment) {
 		'		<a href="/user/' + comment.author + '" class="author">' + comment.author + '</a>\n' +
 		'		<time datetime="' + comment.time +'" title="' + date_str + '">' + time_ago(comment.time) + '</time>\n' +
 		'	</p>\n' +
-		'	<div class="usertext-body">\n' +
+		'	<div class="usertext usertext-body">\n' +
 		'		<div class="md">\n' +
 		'			' + comment.text + '\n' +
 		'		</div>\n' +

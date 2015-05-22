@@ -6,7 +6,7 @@
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
 // @include     https://openuserjs.org/*
-// @version     1.0.8
+// @version     1.0.9
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -20,6 +20,8 @@
 /*
 	changelog:
 
+		2015-05-22 - 1.0.9
+			- fixed hacker news issue
 		2014-11-14 - 1.0.8
 			- fixed issue where you had to click twice to open a link with fade_mode = 3
 		2014-11-04 - 1.0.7
@@ -58,7 +60,7 @@
 
 let fade_mode  = 2,   /* 1: automatically fade all links, 2: fade hovered links, 3: fade clicked links */
 	hide_after = 0,   /* times seen a link before hiding it (0 to never hide links) */
-	expiration = 2,   /* time after which to remove old links from storage, in days */
+	expiration = 14,   /* time after which to remove old links from storage, in days */
 	style      =
 		  '.fade { opacity: 0.5; }'
 		+ '.hide { display: none; }'
@@ -81,7 +83,11 @@ let new_links = [ ],
 				return [].slice.call(document.querySelectorAll('td.title a'), 0, -1);
 			},
 			'parents': function (link) {
-				return [ link.parentNode.parentNode, link.parentNode.parentNode.nextSibling, link.parentNode.parentNode.nextSibling.nextSibling ];
+				return [
+					link.parentElement.parentElement,
+					link.parentElement.parentElement.nextElementSibling,
+					link.parentElement.parentElement.nextElementSibling.nextElementSibling
+				];
 			},
 			'hide_button': function () {
 				let a = document.createElement('a');
@@ -439,7 +445,6 @@ function remove_old() {
 
 	for (let url in links) {
 		if (links[url].when < diff) {
-			console.log(url + ' is 1 day and ' + (diff - links[url].when) + 'ms old. Removing.');
 			delete links[url];
 			count++;
 		}

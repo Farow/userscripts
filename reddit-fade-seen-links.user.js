@@ -6,7 +6,10 @@
 // @include     https://news.ycombinator.com/*
 // @include     https://lobste.rs/*
 // @include     https://openuserjs.org/*
-// @version     1.0.9
+// @include     http*://www.producthunt.com/*
+// @include     https://www.qudos.io/*
+// @include     https://news.layervault.com/
+// @version     1.1.0
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -20,6 +23,8 @@
 /*
 	changelog:
 
+		2015-05-23 - 1.1.0
+			- added support for producthunt.com, qudos.io, news.layervault.com
 		2015-05-22 - 1.0.9
 			- fixed hacker news issue
 		2014-11-14 - 1.0.8
@@ -175,6 +180,38 @@ let new_links = [ ],
 				button.children[0].textContent = 'hide seen (' + amount + ')';
 			},
 			'style': '.table-responsive { overflow-x: visible; }',
+		},
+		'producthunt.com': {
+			'links': '.post-url',
+			'parents': function (link) {
+				return [ link.parentElement.parentElement.parentElement ];
+			},
+			'hide_button': function () {
+				let a = document.createElement('a');
+
+				a.href = '#';
+				a.textContent = 'hide seen';
+				a.classList.add('header--secondary--link');
+
+				return ['.v-links > .container', a];
+			},
+			'hide_button_set_amount': function (button, amount) {
+				button.textContent = 'hide seen (' + amount + ')';
+			},
+			'style': '.new { border-radius: 0; }',
+		},
+		'qudos.io': {
+			'links': '.entry .title',
+			'parents': function (link) {
+				return [ link.parentElement.parentElement.parentElement.parentElement.parentElement ];
+			},
+		},
+		'news.layervault.com': {
+			'links': '.StoryUrl',
+			'parents': function (link) {
+				return [ link.parentElement ];
+			},
+			'style': '.fade { opacity: 1; } .fade .StoryUrl { opacity: 0.5; }',
 		},
 	}
 ;

@@ -9,7 +9,7 @@
 // @include     http*://www.producthunt.com/*
 // @include     https://www.qudos.io/*
 // @include     https://news.layervault.com/
-// @version     1.1.0
+// @version     1.1.1
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -23,6 +23,8 @@
 /*
 	changelog:
 
+		2015-08-08 - 1.1.1
+			- fixed issue where the userscript wouldn't work if there were no previous stored data
 		2015-05-23 - 1.1.0
 			- added support for producthunt.com, qudos.io, news.layervault.com
 		2015-05-22 - 1.0.9
@@ -503,7 +505,7 @@ function get_links_in_page(site) {
 function get_links_in_storage() {
 	let links = GM_getValue('links');
 
-	if (links === undefined) {
+	if (!links) {
 		return { };
 	}
 

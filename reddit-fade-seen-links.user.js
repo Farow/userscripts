@@ -87,7 +87,7 @@ let new_links = [ ],
 		'news.ycombinator.com': {
 			'links': function () {
 				/* exclude 'more' and comment pages */
-				return [].slice.call(document.querySelectorAll('td.title a'), 0, -1);
+				return [].slice.call(document.querySelectorAll('td.title > a'), 0, -1);
 			},
 			'parents': function (link) {
 				return [

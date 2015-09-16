@@ -9,7 +9,7 @@
 // @include     http*://www.producthunt.com/*
 // @include     https://www.qudos.io/*
 // @include     https://news.layervault.com/
-// @version     1.1.1
+// @version     1.1.2
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -23,6 +23,8 @@
 /*
 	changelog:
 
+		2015-09-16 - 1.1.2
+			- fixed hacker news selector (authored by Poorchop)
 		2015-08-08 - 1.1.1
 			- fixed issue where the userscript wouldn't work if there were no previous stored data
 		2015-05-23 - 1.1.0

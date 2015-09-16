@@ -40,7 +40,6 @@ function init() {
 	observer.observe(wrapper, { childList: true });
 }
 
-
 function make_direct(image) {
 	var url;
 

@@ -4,12 +4,13 @@
 // @description Removes the preview and makes links direct
 // @include     http*://www.bing.com/images/search*
 // @include     http*://www.bing.com/videos/search*
-// @version     1.0.2
+// @version     1.0.3
 // @grant       none
 // ==/UserScript==
 
 /*
 	changelog:
+		2016-02-19 - 1.0.3 - prevent sending referrer headers
 		2015-08-27 - 1.0.2 - fixed issue when changing image size
 		2015-08-06 - 1.0.1 - added support for videos
 		2015-04-20 - 1.0.0 - initial release
@@ -52,7 +53,7 @@ function make_direct(image) {
 		url = image.getAttribute('vrhm').match(/"p":"([^"]+?)"/)[1];
 	}
 
-	image.outerHTML = '<a href="' + url + '">' + image.innerHTML + '</a>';
+	image.outerHTML = '<a href="' + url + '" rel="noreferrer">' + image.innerHTML + '</a>';
 }
 
 function image_observer(mutations) {

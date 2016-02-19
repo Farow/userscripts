@@ -2,7 +2,7 @@
 
 |     | Name                                                                                   | Description                                   |
 |-----|----------------------------------------------------------------------------------------|-----------------------------------------------|
-|     | [bing-images-direct.user.js](bing-images-direct.user.js)                               | removes the preview and makes links direct    |
+| *u* | [bing-images-direct.user.js](bing-images-direct.user.js)                               | removes the preview and makes links direct    |
 |     | [reddit-comment-vote-history.user.js](reddit-comment-vote-history.user.js)             | saves the comments you vote on                |
 |     | [reddit-custom-multireddit-buttons.user.js](reddit-custom-multireddit-buttons.user.js) | adds custom buttons to the multireddit list   |
 |     | [reddit-fade-seen-links.user.js](reddit-fade-seen-links.user.js)                       | fades links that you have already seen        |

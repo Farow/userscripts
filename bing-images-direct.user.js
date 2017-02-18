@@ -3,13 +3,16 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Removes the preview and makes links direct
 // @include     http*://www.bing.com/images/search*
-// @include     http*://www.bing.com/videos/search*
-// @version     1.0.4
+// @version     1.0.5
 // @grant       none
 // ==/UserScript==
 
 /*
 	changelog:
+		2017-02-18 - 1.0.5
+			- fixed issues caused by site changes
+			- no longer working on videos
+			- doesn't work on all images loaded dynamically
 		2016-09-16 - 1.0.4 - fixed issue caused by site changes
 		2016-02-19 - 1.0.3 - prevent sending referrer headers
 		2015-08-27 - 1.0.2 - fixed issue when changing image size
@@ -21,11 +24,11 @@ var observer = new MutationObserver(image_observer);
 init();
 
 function init() {
-	var wrapper = document.getElementById('dg_c');
+	var wrapper = document.getElementById('mmComponent_images_1');
 
 	if (!wrapper) {
 		/* we could be inside an iframe, check parent */
-		wrapper = window.parent._d.getElementById('dg_c');
+		wrapper = window.parent._d.getElementById('mmComponent_images_1');
 
 		/* failure */
 		if (!wrapper) {
@@ -33,37 +36,26 @@ function init() {
 		}
 	}
 
-	var images = wrapper.getElementsByClassName('dg_u');
+	var images = wrapper.getElementsByClassName('iusc');
 
 	for (var i = 0; i < images.length; i++) {
-		make_direct(images[i].children[0].children[0]);
+		make_direct(images[i]);
 	}
 
 	observer.observe(wrapper, { childList: true });
 }
 
 function make_direct(image) {
-	var url;
-
-	/* for images */
-	if (image.hasAttribute('m')) {
-		url = image.getAttribute('m').match(/imgurl:"([^"]+?)",/)[1];
-	}
-	/* for videos */
-	else {
-		url = image.getAttribute('vrhm').match(/"p":"([^"]+?)"/)[1];
-	}
-
-	image.outerHTML = '<a href="' + url + '" rel="noreferrer">' + image.innerHTML + '</a>';
+	image.href = image.getAttribute('m').match(/"murl":"([^"]+?)"/)[1];
 }
 
 function image_observer(mutations) {
 	mutations.forEach(function(mutation) {
 		for (var i = 0; i < mutation.addedNodes.length; i++) {
-			var images = mutation.addedNodes[i].getElementsByClassName('dg_u');
+			var images = mutation.addedNodes[i].getElementsByClassName('iusc');
 
 			for (var k = 0; k < images.length; k++) {
-				make_direct(images[k].children[0].children[0]);
+				make_direct(images[k]);
 			}
 		}
 	});

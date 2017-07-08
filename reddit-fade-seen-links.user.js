@@ -9,7 +9,7 @@
 // @include     http*://www.producthunt.com/*
 // @include     https://www.qudos.io/*
 // @include     https://news.layervault.com/
-// @version     1.1.2
+// @version     1.1.3
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -23,6 +23,8 @@
 /*
 	changelog:
 
+		2017-07-08 - 1.1.3
+			- fixed reddit parent selector
 		2015-09-16 - 1.1.2
 			- fixed hacker news selector (authored by Poorchop)
 		2015-08-08 - 1.1.1
@@ -121,7 +123,7 @@ let new_links = [ ],
 			},
 			'links': '.thing.link > .entry a.title',
 			'parents': function (link) {
-				return [ link.parentNode.parentNode.parentNode ];
+				return [ link.closest('.thing') ];
 			},
 			'style': '.fade, .dupe { overflow: hidden; }',
 			'hide_button': function () {

@@ -3,7 +3,7 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Highlights new comments since your last visit
 // @include     /https?:\/\/[a-z]+\.reddit\.com\/r\/[\w:+-]+\/comments\/[\da-z]/
-// @version     2.0.0
+// @version     2.0.1
 // @require     https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -15,6 +15,7 @@
 /*
 	changelog:
 
+		2019-02-12 - 2.0.1 - fixed issue with media threads
 		2016-02-16 - 2.0.0
 			- removed better/worse comments
 			- removed option to use reddit's new comment highlighting, it is now removed
@@ -35,7 +36,7 @@ let HNC = {
 			return;
 		}
 
-		let thread = document.getElementById('siteTable').firstChild.className.match(/id-(t3_[^ ]+)/)[1],
+		let thread = document.getElementsByClassName('thing link')[0].className.match(/id-(t3_[^ ]+)/)[1],
 			now    = Date.now()
 		;
 
@@ -449,7 +450,7 @@ HNC.ui = {
 		}
 
 		let comment_age        = Date.parse(elements.time.getAttribute('dateTime')),
-			double_comment_age = comment_age - (Date.now() - comment_age) * 2;
+			double_comment_age = comment_age - (Date.now() - comment_age) * 2
 		;
 
 		elements[HNC.config.apply_on].setAttribute('style', HNC.generate_comment_style(comment_age, double_comment_age));

@@ -3,7 +3,7 @@
 // @namespace   https://github.com/Farow/userscripts
 // @description Highlights new comments since your last visit
 // @include     /https?:\/\/[a-z]+\.reddit\.com\/r\/[\w:+-]+\/comments\/[\da-z]/
-// @version     2.0.1
+// @version     2.0.2
 // @require     https://raw.githubusercontent.com/bgrins/TinyColor/master/tinycolor.js
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -15,6 +15,7 @@
 /*
 	changelog:
 
+		2020-03-14 - 2.0.2 - fixed exception on comments with no live timestamps
 		2019-02-12 - 2.0.1 - fixed issue with media threads
 		2016-02-16 - 2.0.0
 			- removed better/worse comments
@@ -116,7 +117,7 @@ let HNC = {
 			let elements = {
 				'comment': comment,
 				'text': comment.getElementsByClassName('usertext-body')[0].firstElementChild,
-				'time': comment.getElementsByClassName('live-timestamp')[0],
+				'time': comment.getElementsByTagName('time')[0],
 			};
 
 			for (let element in elements) {

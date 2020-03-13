@@ -1,8 +1,6 @@
 ### Notice
 It is recommended to use [violentmonkey](https://github.com/violentmonkey/violentmonkey) to inject the userscripts. <sup>[*?*](https://github.com/Farow/userscripts/issues/4#issuecomment-416016310)</sup>
 
-Download: [**Chrome**](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag) - [**Firefox**](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/?src=recommended)
-
 ### Userscripts
 
 |     | Name                                                                                   | Description                                   |

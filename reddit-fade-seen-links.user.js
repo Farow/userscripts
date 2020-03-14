@@ -9,7 +9,7 @@
 // @include     http*://www.producthunt.com/*
 // @include     https://www.qudos.io/*
 // @include     https://news.layervault.com/
-// @version     1.1.3
+// @version     1.1.4
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
@@ -23,6 +23,8 @@
 /*
 	changelog:
 
+		2020-03-14 - 1.1.4
+			- fixed iframe issue overwriting new links
 		2017-07-08 - 1.1.3
 			- fixed reddit parent selector
 		2015-09-16 - 1.1.2
@@ -80,8 +82,10 @@ let fade_mode  = 2,   /* 1: automatically fade all links, 2: fade hovered links,
 		+ '.new.dupe { box-shadow: -2px 0px 0px 0px hsl(0, 100%, 75%); }'
 ;
 
-window.addEventListener('load', init); /* compatibility with scripts that modify links */
-window.addEventListener('unload', save_new);
+if (window.self == window.top) {
+	window.addEventListener('load', init); /* compatibility with scripts that modify links */
+	window.addEventListener('unload', save_new);
+}
 
 let new_links = [ ],
 	old_links = 0,
@@ -267,7 +271,7 @@ function init() {
 				else {
 					element.appendChild(button);
 				}
-				
+
 				button.addEventListener('click', function (event) {
 					check_links(site, 1);
 					event.preventDefault();
@@ -454,6 +458,10 @@ function mark_dupes(site, links, exception) {
 }
 
 function save_new() {
+	if (new_links.length == 0) {
+		return;
+	}
+
 	let old = get_links_in_storage();
 
 	new_links.forEach(function (url) {
